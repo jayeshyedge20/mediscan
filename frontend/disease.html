@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MediScan AI | Bone Disease & Pathology Diagnostics</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="footer-styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+      .main-content {
+        padding-top: 100px;
+        padding-bottom: 60px;
+        background: #f4f7fc;
+        min-height: 100vh;
+      }
+      .disease-hero {
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+      .disease-hero h1 {
+        color: #0048c2;
+        font-size: 2.4rem;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+      }
+      .disease-hero p {
+        color: #596080;
+        font-size: 1.1rem;
+        max-width: 750px;
+        margin: 0 auto;
+      }
+      .disease-container {
+        max-width: 1200px;
+        margin: 1.5rem auto;
+        padding: 2.5rem;
+        background: #ffffff;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0, 75, 180, 0.08);
+      }
+      .disease-cards-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.25rem;
+        margin-bottom: 2.5rem;
+      }
+      .d-card {
+        background: #f8fbff;
+        border: 1px solid #dbeafe;
+        border-radius: 14px;
+        padding: 1.25rem;
+        transition: transform 0.2s;
+      }
+      .d-card:hover {
+        transform: translateY(-3px);
+        border-color: #0062ff;
+      }
+      .d-card i {
+        font-size: 1.8rem;
+        color: #0062ff;
+        margin-bottom: 0.75rem;
+      }
+      .d-card h4 {
+        color: #1e3a8a;
+        font-size: 1.05rem;
+        margin-bottom: 0.4rem;
+      }
+      .d-card p {
+        color: #64748b;
+        font-size: 0.85rem;
+        line-height: 1.4;
+      }
+      .btn-start-disease {
+        background: linear-gradient(135deg, #0062ff 0%, #0048c2 100%);
+        color: #fff;
+        border: none;
+        padding: 0.9rem 2.5rem;
+        border-radius: 50px;
+        font-weight: 700;
+        font-size: 1.1rem;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        text-decoration: none;
+        box-shadow: 0 6px 20px rgba(0, 98, 255, 0.25);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- NAVIGATION PLACEHOLDER -->
+    <div id="nav-placeholder"></div>
+
+    <main class="main-content">
+      <div class="container">
+        <div class="disease-hero">
+          <h1>Bone Disease & Pathology AI</h1>
+          <p>Comprehensive radiographic screening for Osteoarthritis, Osteoporosis, Bone Tumors/Lesions, and Osteomyelitis.</p>
+        </div>
+
+        <div class="disease-container">
+          <h2 style="color: #1e3a8a; margin-bottom: 1.5rem; font-size: 1.5rem;">
+            <i class="fas fa-stethoscope text-primary"></i> Detectable Osseous Conditions
+          </h2>
+
+          <div class="disease-cards-row">
+            <div class="d-card">
+              <i class="fas fa-joint"></i>
+              <h4>Osteoarthritis (OA)</h4>
+              <p>Joint space narrowing, subchondral sclerosis, marginal osteophytes, and Kellgren-Lawrence clinical grading.</p>
+            </div>
+            <div class="d-card">
+              <i class="fas fa-cubes-stacked"></i>
+              <h4>Osteoporosis / Osteopenia</h4>
+              <p>Cortical thinning, trabecular wash-out, radiodensity proxy scoring, and fragility fracture risk index.</p>
+            </div>
+            <div class="d-card">
+              <i class="fas fa-circle-radiation"></i>
+              <h4>Bone Lesions & Tumors</h4>
+              <p>Focal osteolytic and osteoblastic lucencies, endosteal scalloping, and transition zone margin analysis.</p>
+            </div>
+            <div class="d-card">
+              <i class="fas fa-bacteria"></i>
+              <h4>Osteomyelitis (Infection)</h4>
+              <p>Periosteal reaction, patchy medullary radiolucency, and inflammatory cortical erosion screening.</p>
+            </div>
+          </div>
+
+          <div style="text-align: center; padding: 2rem; background: #f8fbff; border-radius: 16px; border: 1px solid #dbeafe;">
+            <h3 style="color: #1e3a8a; margin-bottom: 0.75rem;">Ready to Analyze a Radiograph?</h3>
+            <p style="color: #64748b; margin-bottom: 1.5rem; max-width: 600px; margin-left: auto; margin-right: auto;">
+              Launch our diagnostic studio to upload patient radiographs or select from our curated library of test X-rays.
+            </p>
+            <a href="detect.html" class="btn-start-disease">
+              <i class="fas fa-microscope"></i> Open Bone Disease Studio
+            </a>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- FOOTER -->
+    <div id="footer-placeholder"></div>
+
+    <script src="nav-handler.js"></script>
+    <script src="footer-handler.js"></script>
+  </body>
+</html>

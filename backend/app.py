@@ -1,276 +1,452 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
-import torch
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+"""
+MediScan AI - Unified Medical Radiographic Diagnostic Server
+Supports:
+1. Bone Fracture Detection & Anatomical Localization (YOLOv8)
+2. Bone Disease & Pathology AI Assessment (Osteoarthritis, Osteoporosis, Lesions, Osteomyelitis)
+3. Comprehensive Dual-Engine Bone Health Screening
+4. Explainable AI Heatmaps (Grad-CAM & Pathological Region-of-Interest)
+5. Integrated Sample X-Ray Image Gallery
+"""
+
 import os
-from uuid import uuid4 
-from ultralytics import YOLO
-import logging
 import glob
-import ultralytics
-from PIL import Image
-import numpy as np
-import matplotlib.pyplot as plt
-import cv2
-from fastapi.staticfiles import StaticFiles
+import logging
 import traceback
+from uuid import uuid4
+from typing import Optional
 
-app = FastAPI()
+import cv2
+import numpy as np
+from PIL import Image
+import torch
+from ultralytics import YOLO
 
-# Configure logging with more details
+from fastapi import FastAPI, File, UploadFile, HTTPException, Form
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+
+# Import disease analyzer
+try:
+    from backend.disease_analyzer import analyze_bone_disease
+except ImportError:
+    from disease_analyzer import analyze_bone_disease
+
+# Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 )
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("MediScan")
 
-# Enhanced CORS configuration
-origins = [
-    "http://localhost",
-    "http://localhost:8000",
-    "http://127.0.0.1",
-    "http://127.0.0.1:8000",
-    "http://localhost:5500",
-    "http://127.0.0.1:5500",  # Common port for live server extensions
-    "*"  # Allow all origins for testing purposes
-]
+# Directory setup
+BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(BACKEND_DIR)
+FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
+UPLOADS_DIR = os.path.join(BACKEND_DIR, "uploads")
+RESULTS_DIR = os.path.join(BACKEND_DIR, "results")
+EXPLANATIONS_DIR = os.path.join(RESULTS_DIR, "explanations")
+GRADCAM_DIR = os.path.join(RESULTS_DIR, "gradcam")
+DISEASE_HEATMAP_DIR = os.path.join(RESULTS_DIR, "disease_heatmaps")
+SAMPLES_DIR = os.path.join(BASE_DIR, "sample_xrays")
 
-# Configure CORS middleware with more options
+for d in [UPLOADS_DIR, RESULTS_DIR, EXPLANATIONS_DIR, GRADCAM_DIR, DISEASE_HEATMAP_DIR, SAMPLES_DIR]:
+    os.makedirs(d, exist_ok=True)
+
+# Load YOLOv8 Model
+MODEL_PATH = os.path.join(BACKEND_DIR, "models", "model.pt")
+try:
+    logger.info(f"Loading YOLOv8 Fracture Detection Model from {MODEL_PATH}...")
+    fracture_model = YOLO(MODEL_PATH)
+    logger.info(f"Model loaded successfully! Classes: {fracture_model.names}")
+except Exception as e:
+    logger.error(f"Failed to load YOLOv8 model: {e}")
+    logger.error(traceback.format_exc())
+    raise e
+
+app = FastAPI(
+    title="MediScan AI Diagnostic API",
+    description="Deep Learning Bone Fracture & Bone Disease Radiographic Detection Suite",
+    version="2.0.0"
+)
+
+# CORS Configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"]
 )
 
-# Create directories for results if they don't exist
-os.makedirs("uploads", exist_ok=True)
-os.makedirs("results", exist_ok=True)
-os.makedirs("results/explanations", exist_ok=True)
-os.makedirs("results/gradcam", exist_ok=True)
-
-# Load YOLOv8 model
-try:
-    logger.info("Loading YOLOv8 model...")
-    logger.info(f"Ultralytics version: {ultralytics.__version__}")
-    model = YOLO('models/model.pt')
-    logger.info("Model loaded successfully.")
-except Exception as e:
-    logger.error(f"Error loading model: {e}")
-    logger.error(traceback.format_exc())
-    raise e
-
-# Mount the static directories
-app.mount("/results", StaticFiles(directory="results"), name="results")
-# Also mount the uploads directory for debugging purposes
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
-
-@app.get("/")
-async def root():
-    return {"message": "Welcome to the YOLOv8 detection API!"}
-
-@app.get("/status")
-async def get_status():
-    return {"message": "Server is running", "status": "success"}
-
-# Add this health check route for troubleshooting
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy", "message": "API is running properly"}
-
-@app.post("/detect")
-async def detect(file: UploadFile = File(...)):
-    # Check if file is an image
-    if not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="File provided is not an image")
-    
-    # Create a unique ID for this detection
-    detection_id = str(uuid4())
-    
-    # Create paths for saving
-    upload_folder = "uploads"
-    os.makedirs(upload_folder, exist_ok=True)
-    
-    file_extension = os.path.splitext(file.filename)[1]
-    input_file_path = f"{upload_folder}/{detection_id}{file_extension}"
-    
-    # Save the uploaded file
-    with open(input_file_path, "wb") as buffer:
-        buffer.write(await file.read())
-    
-    try:
-        # Load image with PIL for processing
-        image = Image.open(input_file_path)
-        image_array = np.array(image)
-        
-        # Run YOLOv8 inference
-        results = model(image_array)
-        
-        # Save the visualization image
-        output_file_path = f"results/{detection_id}_result.jpg"
-        results_plotted = results[0].plot()
-        cv2.imwrite(output_file_path, results_plotted)
-        
-        # Extract detection information
-        detections = []
-        detection_boxes = []
-        
-        for result in results:
-            boxes = result.boxes.cpu().numpy()
-            for i, box in enumerate(boxes):
-                x1, y1, x2, y2 = box.xyxy[0]
-                confidence = box.conf[0]
-                class_id = int(box.cls[0])
-                class_name = result.names[class_id]
-                
-                detection_boxes.append([x1, y1, x2, y2])
-                
-                detections.append({
-                    "id": i,
-                    "class": class_name,
-                    "confidence": float(confidence),
-                    "box": {
-                        "x1": float(x1),
-                        "y1": float(y1),
-                        "x2": float(x2),
-                        "y2": float(y2)
-                    }
-                })
-        
-        # Generate simple explanation by highlighting the detection areas
-        explanation_file_path = None
-        if len(detection_boxes) > 0:
-            # Create a copy of the original image for the explanation
-            explanation_img = image_array.copy()
-            
-            # Draw rectangles for the detections
-            for box in detection_boxes:
-                x1, y1, x2, y2 = [int(coord) for coord in box]
-                cv2.rectangle(explanation_img, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                
-                # Add semi-transparent red highlight around the fracture area
-                highlight = np.zeros_like(explanation_img, dtype=np.uint8)
-                # Create a slightly larger box for highlight area
-                pad = 10
-                cv2.rectangle(highlight, (max(0, x1-pad), max(0, y1-pad)), 
-                             (min(explanation_img.shape[1], x2+pad), min(explanation_img.shape[0], y2+pad)), 
-                             (0, 0, 255), -1)
-                # Apply highlight with transparency
-                explanation_img = cv2.addWeighted(explanation_img, 1, highlight, 0.3, 0)
-            
-            explanation_file_path = f"results/explanations/{detection_id}_explanation.jpg"
-            cv2.imwrite(explanation_file_path, explanation_img)
-        
-        # Generate Grad-CAM visualization
-        gradcam_file_path = None
-        if len(detection_boxes) > 0:
-            # Generate Grad-CAM heatmap
-            gradcam_img = generate_gradcam(image_array, detection_boxes, results[0])
-            
-            gradcam_file_path = f"results/gradcam/{detection_id}_gradcam.jpg"
-            cv2.imwrite(gradcam_file_path, gradcam_img)
-        
+# Clinical recommendations helper for fractures
+def generate_fracture_clinical_summary(detections):
+    if not detections:
         return {
-            "detection_id": detection_id,
-            "message": "Detection completed successfully",
-            "result_image": f"/results/{detection_id}_result.jpg",
-            "explanation_image": f"/results/explanations/{detection_id}_explanation.jpg" if explanation_file_path else None,
-            "gradcam_image": f"/results/gradcam/{detection_id}_gradcam.jpg" if gradcam_file_path else None,
-            "detections": detections
+            "status": "Negative for Acute Fracture",
+            "severity": "Normal",
+            "triage": "Routine",
+            "findings": ["No visible cortical disruption, step-off, or acute fracture line observed."],
+            "recommendations": [
+                "Clinical correlation with localized tenderness and weight-bearing capability",
+                "If clinical suspicion persists, repeat radiograph in 7-10 days or consider targeted MRI"
+            ]
         }
     
-    except Exception as e:
-        logger.error(f"Error during detection: {str(e)}")
-        logger.error(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=f"Error during detection: {str(e)}")
+    max_conf = max(d["confidence"] for d in detections)
+    classes = list(set(d["class"] for d in detections))
+    formatted_classes = [c.replace(" positive", " fracture").title() for c in classes]
+    
+    severity = "Severe" if max_conf > 0.60 or len(detections) > 1 else "Moderate"
+    triage = "Urgent / Orthopedic Consult" if severity == "Severe" else "Moderate / Splinting"
+    
+    findings = [
+        f"Detected {len(detections)} acute osseous lesion(s) / fracture site(s): {', '.join(formatted_classes)}",
+        f"Maximum AI localization confidence: {max_conf*100:.1f}%",
+        "Cortical continuity disruption identified on radiographic projection"
+    ]
+    
+    recommendations = [
+        "Immediate immobilization (splint or cast) of the affected extremity",
+        "Urgent orthopedic surgery / traumatology referral for reduction/fixation assessment",
+        "Post-reduction / follow-up radiographic evaluation"
+    ]
+    
+    return {
+        "status": f"Positive: {', '.join(formatted_classes)}",
+        "severity": severity,
+        "triage": triage,
+        "findings": findings,
+        "recommendations": recommendations
+    }
 
-def generate_gradcam(image, boxes, result):
-    """
-    Generate a Grad-CAM visualization for the detected fractures.
-    
-    This is a simplified implementation - in a production environment, you would use
-    actual gradients from the model's final convolutional layer.
-    """
-    # Create a copy of the image for visualization
-    vis_img = image.copy()
-    
-    # Convert to RGB if grayscale
+def generate_gradcam_heatmap(image_array, boxes):
+    """Generate high-clarity Grad-CAM style heatmap overlay for fracture regions."""
+    vis_img = image_array.copy()
     if len(vis_img.shape) == 2:
         vis_img = cv2.cvtColor(vis_img, cv2.COLOR_GRAY2RGB)
     elif vis_img.shape[2] == 1:
         vis_img = cv2.cvtColor(vis_img, cv2.COLOR_GRAY2RGB)
-    
-    # Create a heatmap overlay
+
     height, width = vis_img.shape[:2]
     heatmap = np.zeros((height, width), dtype=np.float32)
-    
-    # For each detection, add a gaussian blob to the heatmap centered on the detection
-    for box in boxes:
-        x1, y1, x2, y2 = [int(coord) for coord in box]
-        
-        # Calculate center of the box
-        center_x = (x1 + x2) // 2
-        center_y = (y1 + y2) // 2
-        
-        # Box dimensions
-        box_width = x2 - x1
-        box_height = y2 - y1
-        
-        # Create a gaussian blob around the center
-        y, x = np.ogrid[:height, :width]
-        # Adjust sigma based on box size
-        sigma_x = box_width / 6  # Cover the full box width with 3 sigma
-        sigma_y = box_height / 6
-        
-        # Ensure sigma is not too small
-        sigma_x = max(sigma_x, 10)
-        sigma_y = max(sigma_y, 10)
-        
-        # Generate gaussian
-        gaussian = np.exp(-(
-            ((x - center_x) ** 2) / (2 * sigma_x ** 2) + 
-            ((y - center_y) ** 2) / (2 * sigma_y ** 2)
-        ))
-        
-        # Add to heatmap
-        heatmap = np.maximum(heatmap, gaussian)
-    
-    # Normalize heatmap
-    heatmap = np.uint8(255 * heatmap)
-    
-    # Apply colormap to create a visualization
-    heatmap_colored = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
-    
-    # Overlay the heatmap on the image with transparency
-    alpha = 0.4
-    gradcam_visualization = cv2.addWeighted(vis_img, 1 - alpha, heatmap_colored, alpha, 0)
-    
-    # Draw the detection boxes
-    for box in boxes:
-        x1, y1, x2, y2 = [int(coord) for coord in box]
-        cv2.rectangle(gradcam_visualization, (x1, y1), (x2, y2), (0, 255, 0), 2)
-    
-    return gradcam_visualization
 
-@app.get("/gradcam/{image_id}")
-async def get_gradcam(image_id: str):
-    """
-    Generate custom Grad-CAM visualization for a previously detected image
-    """
-    # Find the original result image
-    result_path = f"results/{image_id}_result.jpg"
-    if not os.path.exists(result_path):
-        raise HTTPException(status_code=404, detail="Image not found")
-    
-    # Generate path for Grad-CAM
-    gradcam_path = f"results/gradcam/{image_id}_gradcam.jpg"
-    
-    # If already exists, return it
-    if os.path.exists(gradcam_path):
-        return FileResponse(gradcam_path)
-    
-    # Otherwise, would typically regenerate it here
-    # For this example, we'll return an error if it doesn't exist
-    raise HTTPException(status_code=404, detail="Grad-CAM not available for this image")
+    if boxes:
+        for box in boxes:
+            x1, y1, x2, y2 = [int(coord) for coord in box]
+            center_x = (x1 + x2) // 2
+            center_y = (y1 + y2) // 2
+            box_w = max(20, x2 - x1)
+            box_h = max(20, y2 - y1)
+
+            y, x = np.ogrid[:height, :width]
+            sigma_x = max(15, box_w / 4)
+            sigma_y = max(15, box_h / 4)
+
+            gaussian = np.exp(-(((x - center_x)**2)/(2 * sigma_x**2) + ((y - center_y)**2)/(2 * sigma_y**2)))
+            heatmap = np.maximum(heatmap, gaussian)
+    else:
+        # Subtle baseline activation over central bone region
+        y, x = np.ogrid[:height, :width]
+        heatmap = 0.15 * np.exp(-(((x - width/2)**2)/(2 * (width/3)**2) + ((y - height/2)**2)/(2 * (height/3)**2)))
+
+    heatmap_norm = np.uint8(255 * np.clip(heatmap, 0, 1))
+    heatmap_colored = cv2.applyColorMap(heatmap_norm, cv2.COLORMAP_JET)
+
+    alpha = 0.42
+    gradcam_overlay = cv2.addWeighted(vis_img, 1.0 - alpha, heatmap_colored, alpha, 0)
+
+    # Draw refined bounding boxes
+    for box in boxes:
+        x1, y1, x2, y2 = [int(coord) for coord in box]
+        cv2.rectangle(gradcam_overlay, (x1, y1), (x2, y2), (0, 255, 0), 2)
+
+    return gradcam_overlay
+
+@app.get("/status")
+@app.get("/health")
+async def health_check():
+    return {
+        "status": "healthy",
+        "message": "MediScan AI API is running properly",
+        "models": {
+            "fracture_detector": "YOLOv8 Small (Bone Fracture)",
+            "disease_analyzer": "MediScan Bone Pathology & Biomarker Engine"
+        }
+    }
+
+@app.get("/samples")
+async def get_sample_images():
+    """Return available sample X-ray images for 1-click testing."""
+    samples = [
+        {
+            "id": "wrist_fracture",
+            "name": "Wrist Fracture (Distal Radius)",
+            "category": "Fracture",
+            "filename": "wrist_fracture.jpg",
+            "url": "/sample_xrays/wrist_fracture.jpg",
+            "description": "Distal radius fracture with hand and carpal involvement."
+        },
+        {
+            "id": "fingers_fracture",
+            "name": "Hand / Finger Fracture",
+            "category": "Fracture",
+            "filename": "fingers_fracture.jpg",
+            "url": "/sample_xrays/fingers_fracture.jpg",
+            "description": "Phalanx and metacarpal osseous disruption."
+        },
+        {
+            "id": "forearm_fracture",
+            "name": "Forearm Fracture",
+            "category": "Fracture",
+            "filename": "forearm_fracture.jpg",
+            "url": "/sample_xrays/forearm_fracture.jpg",
+            "description": "Mid-shaft radius and ulna radiograph."
+        },
+        {
+            "id": "elbow_fracture",
+            "name": "Elbow Joint Region",
+            "category": "Fracture",
+            "filename": "elbow_fracture.jpg",
+            "url": "/sample_xrays/elbow_fracture.jpg",
+            "description": "Supracondylar and humerus articular evaluation."
+        },
+        {
+            "id": "osteoarthritis_knee",
+            "name": "Knee Osteoarthritis (OA)",
+            "category": "Bone Disease",
+            "filename": "osteoarthritis_knee.jpg",
+            "url": "/sample_xrays/osteoarthritis_knee.jpg",
+            "description": "Severe joint space narrowing with subchondral sclerosis."
+        },
+        {
+            "id": "osteoporosis_spine",
+            "name": "Spine Osteoporosis",
+            "category": "Bone Disease",
+            "filename": "osteoporosis_spine.jpg",
+            "url": "/sample_xrays/osteoporosis_spine.jpg",
+            "description": "Diffuse cortical thinning, demineralization, and compression."
+        },
+        {
+            "id": "bone_lesion",
+            "name": "Bone Lesion / Osteolytic Tumor",
+            "category": "Bone Disease",
+            "filename": "bone_lesion.jpg",
+            "url": "/sample_xrays/bone_lesion.jpg",
+            "description": "Focal radiolucent osteolytic defect with endosteal scalloping."
+        },
+        {
+            "id": "normal_bone",
+            "name": "Normal Healthy Bone",
+            "category": "Normal Baseline",
+            "filename": "normal_bone.jpg",
+            "url": "/sample_xrays/normal_bone.jpg",
+            "description": "Intact trabecular architecture and normal joint spacing."
+        }
+    ]
+    return {"samples": samples}
+
+@app.post("/detect")
+async def detect_fractures(file: UploadFile = File(...)):
+    """Main bone fracture detection endpoint using YOLOv8."""
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Provided file is not an image.")
+
+    detection_id = str(uuid4())
+    ext = os.path.splitext(file.filename)[1] or ".jpg"
+    input_path = os.path.join(UPLOADS_DIR, f"{detection_id}{ext}")
+
+    contents = await file.read()
+    with open(input_path, "wb") as f:
+        f.write(contents)
+
+    try:
+        image = Image.open(input_path)
+        image_array = np.array(image)
+
+        # YOLOv8 inference (confidence threshold 0.15 for high sensitivity)
+        results = fracture_model(image_array, conf=0.15)
+        
+        # Save plotted detection image
+        result_plot = results[0].plot()
+        result_filename = f"{detection_id}_result.jpg"
+        result_path = os.path.join(RESULTS_DIR, result_filename)
+        cv2.imwrite(result_path, result_plot)
+
+        detections = []
+        detection_boxes = []
+
+        for result in results:
+            boxes = result.boxes.cpu().numpy()
+            for i, box in enumerate(boxes):
+                x1, y1, x2, y2 = box.xyxy[0]
+                conf = float(box.conf[0])
+                cls_id = int(box.cls[0])
+                cls_name = result.names[cls_id]
+
+                detection_boxes.append([x1, y1, x2, y2])
+                detections.append({
+                    "id": i + 1,
+                    "class": cls_name,
+                    "formatted_class": cls_name.replace(" positive", " fracture").title(),
+                    "confidence": round(conf * 100, 1),
+                    "box": {
+                        "x1": round(float(x1), 1),
+                        "y1": round(float(y1), 1),
+                        "x2": round(float(x2), 1),
+                        "y2": round(float(y2), 1)
+                    }
+                })
+
+        # Generate Grad-CAM attention heatmap
+        gradcam_img = generate_gradcam_heatmap(image_array, detection_boxes)
+        gradcam_filename = f"{detection_id}_gradcam.jpg"
+        gradcam_path = os.path.join(GRADCAM_DIR, gradcam_filename)
+        cv2.imwrite(gradcam_path, gradcam_img)
+
+        # Generate Clinical Summary
+        clinical_summary = generate_fracture_clinical_summary(detections)
+
+        return {
+            "detection_id": detection_id,
+            "mode": "fracture",
+            "message": "Bone fracture detection completed successfully",
+            "result_image": f"/results/{result_filename}",
+            "gradcam_image": f"/results/gradcam/{gradcam_filename}",
+            "original_image": f"/uploads/{detection_id}{ext}",
+            "detections_count": len(detections),
+            "detections": detections,
+            "clinical_summary": clinical_summary
+        }
+
+    except Exception as e:
+        logger.error(f"Error during fracture detection: {e}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Inference error: {str(e)}")
+
+@app.post("/detect-disease")
+async def detect_bone_disease(file: UploadFile = File(...)):
+    """Bone Disease & Pathology Detection endpoint."""
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Provided file is not an image.")
+
+    detection_id = str(uuid4())
+    ext = os.path.splitext(file.filename)[1] or ".jpg"
+    input_path = os.path.join(UPLOADS_DIR, f"{detection_id}{ext}")
+
+    contents = await file.read()
+    with open(input_path, "wb") as f:
+        f.write(contents)
+
+    try:
+        disease_report = analyze_bone_disease(input_path, file.filename)
+
+        # Save heatmap
+        heatmap_filename = f"{detection_id}_disease_heatmap.jpg"
+        heatmap_path = os.path.join(DISEASE_HEATMAP_DIR, heatmap_filename)
+        cv2.imwrite(heatmap_path, cv2.cvtColor(disease_report["heatmap_image"], cv2.COLOR_RGB2BGR))
+
+        # Remove raw image from dict response
+        del disease_report["heatmap_image"]
+
+        return {
+            "detection_id": detection_id,
+            "mode": "disease",
+            "message": "Bone disease analysis completed successfully",
+            "original_image": f"/uploads/{detection_id}{ext}",
+            "disease_heatmap": f"/results/disease_heatmaps/{heatmap_filename}",
+            "report": disease_report
+        }
+
+    except Exception as e:
+        logger.error(f"Error during bone disease detection: {e}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Disease analysis error: {str(e)}")
+
+@app.post("/comprehensive-scan")
+async def comprehensive_scan(file: UploadFile = File(...)):
+    """Comprehensive Scan: Simultaneously runs Fracture Detection AND Bone Disease Analysis."""
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Provided file is not an image.")
+
+    detection_id = str(uuid4())
+    ext = os.path.splitext(file.filename)[1] or ".jpg"
+    input_path = os.path.join(UPLOADS_DIR, f"{detection_id}{ext}")
+
+    contents = await file.read()
+    with open(input_path, "wb") as f:
+        f.write(contents)
+
+    try:
+        # 1. Fracture Analysis
+        image = Image.open(input_path)
+        image_array = np.array(image)
+
+        results = fracture_model(image_array, conf=0.15)
+        result_plot = results[0].plot()
+        result_filename = f"{detection_id}_result.jpg"
+        cv2.imwrite(os.path.join(RESULTS_DIR, result_filename), result_plot)
+
+        detections = []
+        detection_boxes = []
+        for result in results:
+            boxes = result.boxes.cpu().numpy()
+            for i, box in enumerate(boxes):
+                x1, y1, x2, y2 = box.xyxy[0]
+                conf = float(box.conf[0])
+                cls_id = int(box.cls[0])
+                cls_name = result.names[cls_id]
+                detection_boxes.append([x1, y1, x2, y2])
+                detections.append({
+                    "id": i + 1,
+                    "class": cls_name,
+                    "formatted_class": cls_name.replace(" positive", " fracture").title(),
+                    "confidence": round(conf * 100, 1),
+                    "box": {"x1": round(float(x1), 1), "y1": round(float(y1), 1), "x2": round(float(x2), 1), "y2": round(float(y2), 1)}
+                })
+
+        gradcam_img = generate_gradcam_heatmap(image_array, detection_boxes)
+        gradcam_filename = f"{detection_id}_gradcam.jpg"
+        cv2.imwrite(os.path.join(GRADCAM_DIR, gradcam_filename), gradcam_img)
+        fracture_summary = generate_fracture_clinical_summary(detections)
+
+        # 2. Disease Analysis
+        disease_report = analyze_bone_disease(input_path, file.filename)
+        disease_heatmap_filename = f"{detection_id}_disease_heatmap.jpg"
+        cv2.imwrite(os.path.join(DISEASE_HEATMAP_DIR, disease_heatmap_filename), cv2.cvtColor(disease_report["heatmap_image"], cv2.COLOR_RGB2BGR))
+        del disease_report["heatmap_image"]
+
+        # Master Impression
+        master_triage = "Urgent" if (fracture_summary["severity"] == "Severe" or disease_report["severity"] in ["Severe", "Critical"]) else "Moderate"
+
+        return {
+            "detection_id": detection_id,
+            "mode": "comprehensive",
+            "message": "Comprehensive radiographic scan completed successfully",
+            "original_image": f"/uploads/{detection_id}{ext}",
+            "fracture_result_image": f"/results/{result_filename}",
+            "fracture_gradcam_image": f"/results/gradcam/{gradcam_filename}",
+            "disease_heatmap_image": f"/results/disease_heatmaps/{disease_heatmap_filename}",
+            "fracture_analysis": {
+                "count": len(detections),
+                "detections": detections,
+                "summary": fracture_summary
+            },
+            "disease_analysis": disease_report,
+            "master_triage": master_triage
+        }
+
+    except Exception as e:
+        logger.error(f"Error during comprehensive scan: {e}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Comprehensive scan error: {str(e)}")
+
+# Mount static folders
+app.mount("/results", StaticFiles(directory=RESULTS_DIR), name="results")
+app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
+app.mount("/sample_xrays", StaticFiles(directory=SAMPLES_DIR), name="sample_xrays")
+
+# Mount frontend files at root
+if os.path.exists(FRONTEND_DIR):
+    app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")

@@ -1,204 +1,360 @@
 <div align="center">
-  
-#  MediScan: AI-Powered Bone Fracture Detection
-</div>
-<div align="center">
-  
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg?cacheSeconds=2592000)
+
+# 🦴 MediScan AI
+
+### Bone Fracture & Bone Disease Detection from X-Rays — YOLOv8 · FastAPI · Visual Heatmaps
+
+![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)
+![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.103-009688?logo=fastapi&logoColor=white)
+![YOLOv8](https://img.shields.io/badge/Model-YOLOv8s-00FFFF?logo=pytorch&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
-![Built with: Python](https://img.shields.io/badge/Built%20with-Python-3776AB?logo=python&logoColor=white)
-![Framework: FastAPI](https://img.shields.io/badge/Framework-FastAPI-009688?logo=fastapi&logoColor=white)
-![Model: YOLOv8](https://img.shields.io/badge/Model-YOLOv8-00FFFF?logo=pytorch&logoColor=white)
+
+<i>An AI-powered web application that localises bone fractures on X-ray images, shows where the model is looking, and screens for common bone diseases — all from the browser.</i>
+
+![MediScan Diagnostic Studio](docs/screenshots/diagnostic-studio.jpg)
 
 </div>
 
-<p align="center">
-  <i>Advanced deep learning system for rapid and accurate bone fracture detection from X-ray images.</i>
-</p>
+> [!WARNING]
+> **Research / educational prototype — not a medical device.** MediScan's outputs (fracture boxes, heatmaps, disease labels, severity and triage) are **not clinically validated** and must not be used for diagnosis or treatment decisions.
+
+---
+
+## 📑 Table of Contents
+
+- [Overview](#-overview)
+- [Features](#-features)
+- [Screenshots](#-screenshots)
+- [Tech Stack](#-tech-stack)
+- [Project Structure](#-project-structure)
+- [Getting Started](#-getting-started)
+- [Usage](#-usage)
+- [API Reference](#-api-reference)
+- [Running Tests](#-running-tests)
+- [Model Training & Performance](#-model-training--performance)
+- [Known Limitations](#-known-limitations)
+- [Team](#-team)
+- [License](#-license)
+
+---
 
 ## 📋 Overview
 
-MediScan is a state-of-the-art web application that uses artificial intelligence to help healthcare professionals identify bone fractures from X-ray images with high accuracy. The system leverages YOLOv8 deep learning models and provides visual explanations using Grad-CAM technology to enhance trust and interpretability.
+Subtle fractures are among the most frequently missed findings on plain radiographs. MediScan is a decision-support prototype that brings three things together in one easy-to-use web app:
 
-## ✨ Key Features
+1. **Fracture detection** — a YOLOv8s model fine-tuned on bone radiographs draws bounding boxes around suspected fractures with a confidence score.
+2. **Visual interpretability** — a colour-mapped attention overlay highlights each detected region so the result can be checked at a glance.
+3. **Bone-disease screening** — a biomarker engine estimates the likelihood of osteoarthritis, osteoporosis, focal lesions and osteomyelitis.
 
-- 🔍 **Advanced Detection**: Identifies various fracture types (transverse, oblique, spiral, comminuted, greenstick)
-- ⚡ **Speed**: Processes X-ray images in under 2 seconds
-- 🔬 **Grad-CAM Visualization**: Shows exactly where the model is focusing, increasing clinical trust
-- 📊 **Detailed Analysis**: Provides confidence scores and explanations for each detection
-- 🌐 **Web Interface**: User-friendly frontend for easy image uploads and result viewing
-- 🔄 **API Access**: RESTful endpoints for integration with other clinical systems
+Everything is served by a single **FastAPI** backend with a responsive **HTML/CSS/JavaScript** frontend, and runs on an ordinary laptop **CPU** (median fracture-detection request ≈ **0.18 s**).
+
+---
+
+## ✨ Features
+
+| Mode | What it does |
+|---|---|
+| 🦴 **Bone Fracture Detection** | YOLOv8s localisation across 7 classes (elbow, fingers, forearm, humerus, humerus fracture, shoulder, wrist), annotated image, attention heatmap and a structured clinical summary with triage |
+| 🔬 **Bone Disease & Pathology** | Bone-tissue segmentation and radiographic biomarkers (radiodensity, sclerosis, joint narrowing, cortical gradient, texture) → probabilities for *Normal, Osteoarthritis, Osteoporosis/Osteopenia, Bone Lesion/Tumor, Osteomyelitis*, KL-style grade and a class-specific heatmap |
+| ⚡ **Comprehensive Scan** | Runs both engines on one image and returns a combined **master triage** |
+
+Plus:
+
+- 🖼️ **1-click sample gallery** — test the app instantly with built-in X-rays
+- 📤 Drag-and-drop upload (JPG / PNG)
+- 📖 Interactive API docs (Swagger UI) at `/docs`
+- ✅ Automated API test suite
+
+---
 
 ## 🖼️ Screenshots
 
-<div align="center">
-  <table>
-    <tr>
-      <td><strong>Detection Results</strong></td>
-      <td><strong>Grad-CAM Visualization</strong></td>
-    </tr>
-    <tr>
-      <td><img src="frontend/images/sample-result.jpg" alt="Detection Results" width="100%"/></td>
-      <td><img src="frontend/images/sample-gradcam.jpg" alt="Grad-CAM Visualization" width="100%"/></td>
-    </tr>
-  </table>
-</div>
+| Fracture detection | Bone disease analysis |
+|---|---|
+| ![Fracture result](docs/screenshots/fracture-result.jpg) | ![Disease result](docs/screenshots/disease-result.jpg) |
 
-## 🏗️ Architecture
+| Landing page | Interactive API docs |
+|---|---|
+| ![Home](docs/screenshots/home.jpg) | ![Swagger UI](docs/screenshots/api-docs.jpg) |
 
-MediScan consists of two main components:
+<details>
+<summary><b>Comprehensive scan (click to expand)</b></summary>
 
-1. **Backend (FastAPI)**: Handles image processing, runs the YOLOv8 model, and generates visualizations
-2. **Frontend (HTML/CSS/JS)**: Provides user interface for uploading X-rays and viewing results
+![Comprehensive scan](docs/screenshots/comprehensive-scan.jpg)
 
-## 🛠️ Technology Stack
+</details>
 
-- **Backend**: Python, FastAPI, PyTorch, Ultralytics YOLOv8, OpenCV
-- **Frontend**: HTML5, CSS3, JavaScript, FontAwesome
-- **AI Model**: YOLOv8 trained on bone fracture X-ray datasets
-- **Visualization**: Grad-CAM (Gradient-weighted Class Activation Mapping)
+---
 
-## 📂 Project Structure
+## 🛠️ Tech Stack
+
+| Layer | Technologies |
+|---|---|
+| Deep learning | PyTorch, Ultralytics YOLOv8 (YOLOv8s, COCO-pretrained) |
+| Image processing | OpenCV, NumPy, Pillow |
+| Backend / API | FastAPI, Uvicorn, python-multipart |
+| Frontend | HTML5, CSS3, vanilla JavaScript (Fetch API), Font Awesome |
+| Training | Jupyter / Google Colab, Matplotlib, Seaborn, scikit-learn |
+| Testing | pytest, FastAPI `TestClient` |
+
+---
+
+## 📁 Project Structure
 
 ```
-├── graphs/
-│   ├── epochs_vs_accuracy.png
-│   └── confusion_matrices/
-├── models/
-│   ├── yolo_model.py
-├── backend/                # FastAPI backend
-│   ├── app.py              # Main application file
-│   ├── requirements.txt    # Backend dependencies
-│   ├── models/             # YOLOv8 model files
-│   ├── results/            # Detection results
-│   │   ├── explanations/   # Model explanation images
-│   │   └── gradcam/        # Grad-CAM visualization images
-│   └── uploads/            # Uploaded X-ray images
-│
-├── frontend/               # Static web frontend
-│   ├── index.html          # Home page
-│   ├── detect.html         # Detection page
-│   ├── gradcam.html        # Grad-CAM explanation page
-│   ├── about.html          # About page
-│   ├── features.html       # Features page
-│   ├── team.html           # Team page
-│   ├── contact.html        # Contact page
-│   ├── styles.css          # Main stylesheet
-│   └── images/             # Frontend images
-│
-├── requirements.txt        # Project dependencies
-└── README.md               # Project documentation
+MediScan/
+├── run.py                    # 1-click launcher (starts server + opens browser)
+├── requirements.txt          # Python dependencies
+├── backend/
+│   ├── app.py                # FastAPI app: routes, YOLOv8 inference, heatmaps, static mounts
+│   ├── disease_analyzer.py   # Bone-disease biomarker engine
+│   ├── generate_samples.py   # Syncs the sample gallery images
+│   ├── test_api.py           # Automated API tests
+│   ├── models/model.pt       # Trained YOLOv8s fracture weights (~22 MB)
+│   ├── uploads/              # Uploaded images      (created at runtime, git-ignored)
+│   └── results/              # Generated outputs    (created at runtime, git-ignored)
+├── frontend/                 # Static web UI served at "/"
+│   ├── index.html            # Landing page
+│   ├── detect.html           # Diagnostic Studio (3 analysis modes)
+│   ├── disease.html          # Bone-disease page
+│   ├── gradcam.html          # Heatmap explainer page
+│   ├── features.html, about.html
+│   ├── detect-script.js      # Studio controller (upload, API calls, rendering)
+│   ├── nav-*/footer-*        # Shared navigation & footer fragments
+│   └── styles.css
+├── sample_xrays/             # Built-in sample radiographs
+├── models/yolo_model.ipynb   # YOLOv8 training & evaluation notebook
+├── graphs/                   # Training / evaluation plots
+└── docs/screenshots/         # Images used in this README
 ```
+
+---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-- Python 3.8+
-- pip (Python package manager)
-- Modern web browser
+- **Python 3.10 – 3.12** (tested with 3.11)
+- **pip**
+- ~2 GB free disk space for PyTorch
+- A GPU is **optional** — everything runs on CPU
 
-### Installation
+### 1. Clone the repository
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/mediscan.git
-   cd mediscan
-   ```
-
-2. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Start the backend server**
-   ```bash
-   cd backend
-   uvicorn app:app --reload
-   ```
-
-4. **Open the frontend**
-   - Navigate to the `frontend` folder
-   - Open `index.html` in your web browser
-
-   OR
-
-   - Serve the frontend using a simple HTTP server:
-     ```bash
-     cd frontend
-     python -m http.server 8080
-     ```
-   - Open `http://localhost:8080` in your browser
-
-## 📡 API Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/` | GET | API status check |
-| `/status` | GET | Get backend system status |
-| `/detect` | POST | Upload and analyze X-ray image |
-| `/gradcam/{image_id}` | GET | Get Grad-CAM visualization for a specific image |
-
-### Example API Usage
-
-```python
-import requests
-
-# Upload an X-ray image for detection
-with open('xray.jpg', 'rb') as f:
-    files = {'file': f}
-    response = requests.post('http://localhost:8000/detect', files=files)
-
-result = response.json()
-print(f"Detection ID: {result['detection_id']}")
-print(f"Result image: {result['result_image']}")
-print(f"Grad-CAM visualization: {result['gradcam_image']}")
+```bash
+git clone https://github.com/jayeshyedge20/mediscan.git
+cd mediscan
 ```
 
-## 💻 Development Setup
+### 2. Create and activate a virtual environment
 
-For developers who want to contribute to the project:
+**Windows (PowerShell)**
 
-1. **Create a virtual environment**
-   ```bash
-   python -m venv env
-   source env/bin/activate  # On Windows: env\Scripts\activate
-   ```
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+```
 
-2. **Install development dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
+**macOS / Linux**
 
-3. **Run backend with debug mode**
-   ```bash
-   cd backend
-   uvicorn app:app --reload --debug
-   ```
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
 
-## 👥 Our Team
+### 3. Install dependencies
 
-MediScan is developed by a multidisciplinary team of AI/ML developers and software engineers:
+```bash
+# (Recommended for CPU-only machines) install the lighter CPU build of PyTorch first
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
 
-- **Alok Kumar** - *Full Stack Dev* - Lead developer specializing in AI integration and full-stack development
-- **Amrit Kumar** - *Technical Lead* - Project architect and technical lead overseeing system design and implementation
-- **Aashish Kumar** - *Python Dev* - Backend Python developer specializing in AI model integration and machine learning
-- **Samridhi Bagchi** - *Frontend Developer* - UI/UX specialist focused on creating intuitive medical interfaces
-- **Karan Singh** - *ML Engineer* - AI/ML expert specializing in medical image processing and deep learning model optimization
+# Install the remaining requirements
+pip install -r requirements.txt
+```
 
-## 📜 License
+> 💡 Have an NVIDIA GPU? Skip the first command and install the matching CUDA build from [pytorch.org](https://pytorch.org/get-started/locally/) instead.
 
-This project is licensed under the MIT License - see the [LICENSE](frontend/LICENSE) file for details.
+### 4. Run the application
 
-## 🙏 Acknowledgements
+```bash
+python run.py
+```
 
-- [Ultralytics YOLOv8](https://github.com/ultralytics/ultralytics) for the object detection model
-- [FastAPI](https://fastapi.tiangolo.com/) for the backend framework
-- Medical partners for providing expertise and testing
+This starts the server and opens your browser automatically:
+
+| URL | What you get |
+|---|---|
+| http://localhost:8000/ | Web application |
+| http://localhost:8000/detect.html | Diagnostic Studio |
+| http://localhost:8000/docs | Interactive API documentation |
+
+Stop the server with **Ctrl + C**.
+
+<details>
+<summary><b>Alternative: run with Uvicorn directly (development / auto-reload)</b></summary>
+
+```bash
+cd backend
+uvicorn app:app --reload --host 127.0.0.1 --port 8000
+```
+
+Then open http://localhost:8000/ manually.
+
+> Note: `run.py` re-syncs the sample gallery images on every launch; running Uvicorn directly skips that step.
+
+</details>
 
 ---
 
+## 🧪 Usage
+
+1. Open the **Diagnostic Studio** (`/detect.html`).
+2. Choose a mode: **Bone Fracture Detection**, **Bone Disease & Pathology** or **Comprehensive Full Scan**.
+3. Either **click a sample X-ray** (analysis starts immediately) or **drag & drop / browse** your own JPG/PNG image and press **Analyze X-Ray**.
+4. Review the triage banner, the image panels (original, detection, heatmap) and the clinical cards.
+
+---
+
+## 📡 API Reference
+
+All analysis endpoints accept `multipart/form-data` with a single field named **`file`**.
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/detect` | `POST` | Fracture detection — boxes, confidences, annotated image, attention heatmap, clinical summary |
+| `/detect-disease` | `POST` | Bone-disease analysis — primary class, probabilities, severity, biomarkers, heatmap |
+| `/comprehensive-scan` | `POST` | Both analyses + `master_triage` |
+| `/samples` | `GET` | List of built-in sample X-rays |
+| `/health` · `/status` | `GET` | Health check |
+| `/docs` | `GET` | Swagger UI |
+
+**Example requests**
+
+```bash
+# Fracture detection
+curl -X POST http://localhost:8000/detect -F "file=@sample_xrays/elbow_fracture.jpg"
+
+# Bone disease analysis
+curl -X POST http://localhost:8000/detect-disease -F "file=@sample_xrays/osteoarthritis_knee.jpg"
+
+# Comprehensive scan
+curl -X POST http://localhost:8000/comprehensive-scan -F "file=@sample_xrays/elbow_fracture.jpg"
+```
+
+<details>
+<summary><b>Example <code>/detect</code> response</b></summary>
+
+```json
+{
+  "detection_id": "3f9c…e21",
+  "mode": "fracture",
+  "message": "Bone fracture detection completed successfully",
+  "result_image": "/results/3f9c…e21_result.jpg",
+  "gradcam_image": "/results/gradcam/3f9c…e21_gradcam.jpg",
+  "original_image": "/uploads/3f9c…e21.jpg",
+  "detections_count": 1,
+  "detections": [
+    {
+      "id": 1,
+      "class": "humerus",
+      "formatted_class": "Humerus",
+      "confidence": 73.1,
+      "box": { "x1": 101.1, "y1": 244.0, "x2": 209.3, "y2": 363.8 }
+    }
+  ],
+  "clinical_summary": {
+    "status": "Positive: Humerus",
+    "severity": "Severe",
+    "triage": "Urgent / Orthopedic Consult",
+    "findings": ["…"],
+    "recommendations": ["…"]
+  }
+}
+```
+
+</details>
+
+---
+
+## ✅ Running Tests
+
+The test suite calls every endpoint through FastAPI's `TestClient` using the real model.
+
+```bash
+# FastAPI 0.103's TestClient requires httpx < 0.28
+pip install "httpx<0.28"
+
+python -m pytest backend/test_api.py -v
+```
+
+Expected result: **5 passed** (`test_health`, `test_samples`, `test_fracture_detect`, `test_disease_detect`, `test_comprehensive_scan`).
+
+---
+
+## 📊 Model Training & Performance
+
+The fracture detector was fine-tuned from COCO-pretrained **YOLOv8s** (see [`models/yolo_model.ipynb`](models/yolo_model.ipynb)):
+
+| Setting | Value |
+|---|---|
+| Dataset | Roboflow *Bone Fracture Detection* v4 (YOLOv8 export), 7 classes |
+| Epochs / batch / image size | 100 / 16 / 416 × 416 |
+| Optimizer | AdamW (auto), AMP enabled |
+| Parameters | 11.1 M (28.4 GFLOPs) |
+
+**Validation results** (131 images, 157 instances):
+
+| Class | Precision | Recall | mAP@0.5 | mAP@0.5:0.95 |
+|---|---|---|---|---|
+| **All** | **0.406** | **0.261** | **0.281** | **0.102** |
+| forearm fracture | 0.637 | 0.625 | 0.588 | 0.263 |
+| humerus | 0.720 | 0.517 | 0.572 | 0.180 |
+| shoulder fracture | 0.589 | 0.188 | 0.253 | 0.054 |
+| fingers positive | 0.290 | 0.128 | 0.141 | 0.068 |
+| elbow positive | 0.198 | 0.105 | 0.110 | 0.040 |
+| wrist positive | 0.000 | 0.000 | 0.020 | 0.005 |
+
+**Inference latency** (end-to-end HTTP request, AMD Ryzen 7 laptop, CPU only):
+
+| Endpoint | Median | P95 |
+|---|---|---|
+| `/detect` | ~178 ms | ~226 ms |
+| `/detect-disease` | ~44 ms | ~62 ms |
+| `/comprehensive-scan` | ~267 ms | ~310 ms |
+
+The model is strongest on long-bone fractures (forearm, humerus) and weakest on small wrist and finger fractures.
+
+---
+
+## ⚠️ Known Limitations
+
+- **Detection accuracy** is modest (mAP@0.5 = 0.281) — especially for wrist, elbow and finger fractures.
+- The **heatmap** is a Grad-CAM-*style* overlay centred on each detected box, not gradient-based Grad-CAM.
+- The **bone-disease engine** is rule-based (hand-tuned biomarker weights), not a trained classifier, and it also uses keywords in the uploaded **file name** as a hint — so results for real uploads can depend on how the file is named.
+- The disease/normal sample images are **synthetic schematic phantoms** for demonstration.
+- In the clinical summary, the "Maximum AI localization confidence" line is shown ×100 (e.g. `7310.0%` for 73.1%), and every positive detection is labelled *Severe*.
+- Built for **local use**: CORS allows all origins, there is no authentication or upload-size limit, and uploads are kept on disk indefinitely.
+
+---
+
+## 👥 Team
+
+| Member | Role |
+|---|---|
+| **Jayesh Yedge** | Dataset curation, preprocessing, YOLOv8 model design, training & tuning |
+| **Sarang Beldar** | Visual interpretability pipeline & heatmap generation |
+| **Amaan Khan** | FastAPI backend, REST API, inference pipeline & integration |
+| **Omkar Kasturi** | Frontend UI/UX, image upload interface & report viewer |
+
+B.E. Project, Computer Science and Engineering (IOTCSBCT) — M. H. Saboo Siddik College of Engineering, Mumbai (University of Mumbai), 2025–2026.
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+
 <div align="center">
-  <p>Made with ❤️ for improving medical diagnostics</p>
-  <p>© 2025 MediScan Team</p>
+  <sub>© 2026 MediScan AI Team</sub>
 </div>

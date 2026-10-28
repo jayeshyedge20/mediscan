@@ -3,690 +3,418 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MediScan | Fracture Detection</title>
+    <title>MediScan AI | Bone Fracture & Disease Detection</title>
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="footer-styles.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <style>
-      /* Enhanced Detection Tool Styles */
+      .main-content {
+        padding-top: 100px;
+        padding-bottom: 60px;
+        background: #f4f7fc;
+        min-height: 100vh;
+      }
       .detector-container {
         max-width: 1200px;
-        margin: 2rem auto;
-        padding: 2rem;
-        background: var(--white);
-        border-radius: var(--radius-lg);
-        box-shadow: var(--card-shadow);
+        margin: 1.5rem auto;
+        padding: 2.5rem;
+        background: #ffffff;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0, 75, 180, 0.08);
       }
-      
       .detection-header {
         text-align: center;
-        margin-bottom: 2.5rem;
-        position: relative;
+        margin-bottom: 2rem;
       }
-      
-      .detection-header::after {
-        content: "";
-        position: absolute;
-        bottom: -10px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 80px;
-        height: 4px;
-        background: linear-gradient(to right, var(--primary-light), var(--primary), var(--primary-dark));
-        border-radius: 2px;
-      }
-
       .detection-header h1 {
-        color: var(--primary);
-        margin-bottom: 0.75rem;
-        font-size: 2.2rem;
+        color: #0048c2;
+        font-size: 2.4rem;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
       }
-
       .detection-header p {
-        color: var(--text-light);
-        max-width: 700px;
+        color: #596080;
+        font-size: 1.1rem;
+        max-width: 750px;
         margin: 0 auto;
-        line-height: 1.6;
       }
 
-      /* Redesigned Drop Area */
+      /* Mode Switcher Tabs */
+      .mode-switcher-container {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin-bottom: 2.5rem;
+        flex-wrap: wrap;
+      }
+      .mode-tab {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.9rem 1.8rem;
+        border-radius: 50px;
+        background: #eef3fc;
+        color: #334155;
+        border: 2px solid transparent;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+      .mode-tab:hover {
+        background: #e0ecfd;
+        transform: translateY(-2px);
+      }
+      .mode-tab.active {
+        background: linear-gradient(135deg, #0062ff 0%, #0048c2 100%);
+        color: #ffffff;
+        box-shadow: 0 6px 20px rgba(0, 98, 255, 0.25);
+      }
+      .mode-tab i {
+        font-size: 1.2rem;
+      }
+
+      /* Quick Sample Gallery */
+      .samples-section {
+        background: #f8fbff;
+        border: 1px solid #dbeafe;
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+      }
+      .samples-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+      }
+      .samples-title h3 {
+        color: #1e3a8a;
+        font-size: 1.15rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .samples-title span {
+        font-size: 0.85rem;
+        color: #64748b;
+      }
+      .samples-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 1rem;
+      }
+      .sample-card {
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 0.5rem;
+        border: 2px solid transparent;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      }
+      .sample-card:hover {
+        border-color: #0062ff;
+        transform: translateY(-4px);
+        box-shadow: 0 8px 18px rgba(0, 98, 255, 0.15);
+      }
+      .sample-card img {
+        width: 100%;
+        height: 90px;
+        object-fit: cover;
+        border-radius: 8px;
+        background: #1e293b;
+      }
+      .sample-card .sample-name {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-top: 0.4rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .sample-card .sample-badge {
+        display: inline-block;
+        font-size: 0.68rem;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin-top: 2px;
+      }
+      .badge-fracture { background: #fee2e2; color: #b91c1c; }
+      .badge-disease { background: #e0e7ff; color: #4338ca; }
+      .badge-normal { background: #dcfce7; color: #15803d; }
+
+      /* Drop Upload Area */
       .drop-area {
-        background: linear-gradient(135deg, #f8f9fa 0%, #f1f8fe 100%);
-        border: 2px dashed var(--primary-light);
-        border-radius: var(--radius-xl);
+        background: linear-gradient(135deg, #f8faff 0%, #edf4fe 100%);
+        border: 2px dashed #93c5fd;
+        border-radius: 16px;
         padding: 3rem 2rem;
         text-align: center;
         cursor: pointer;
         transition: all 0.3s ease;
         margin-bottom: 2rem;
-        position: relative;
-        overflow: hidden;
       }
-      
-      .drop-area::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M54.627 0l.83.828-1.415 1.415L51.8 0h2.827zM5.373 0l-.83.828L5.96 2.243 8.2 0H5.374zM48.97 0l3.657 3.657-1.414 1.414L46.143 0h2.828zM11.03 0L7.372 3.657 8.787 5.07 13.857 0H11.03zm32.284 0L49.8 6.485 48.384 7.9l-7.9-7.9h2.83zM16.686 0L10.2 6.485 11.616 7.9l7.9-7.9h-2.83zm20.97 0l9.315 9.314-1.414 1.414L34.828 0h2.83zM22.344 0L13.03 9.314l1.414 1.414L25.172 0h-2.83zM32 0l12.142 12.142-1.414 1.414L30 .828 17.272 13.556l-1.414-1.414L28 0h4zM.284 0l28 28-1.414 1.414L0 2.544V0h.284zM0 5.373l25.456 25.455-1.414 1.415L0 8.2V5.374zm0 5.656l22.627 22.627-1.414 1.414L0 13.86v-2.83zm0 5.656l19.8 19.8-1.415 1.413L0 19.514v-2.83zm0 5.657l16.97 16.97-1.414 1.415L0 25.172v-2.83zM0 28l14.142 14.142-1.414 1.414L0 30.828V28zm0 5.657L11.314 44.97l-1.414 1.414L0 36.485v-2.83zm0 5.657L8.485 47.8l-1.414 1.414L0 42.143v-2.83zm0 5.657l5.657 5.657-1.414 1.415L0 47.8v-2.83zm0 5.657l2.828 2.83-1.414 1.413L0 53.456v-2.83zM54.627 60L28 33.373l-1.414 1.414L54.627 60zm-5.657 0L28 38.627l-1.414 1.414L48.97 60zm-5.657 0l-16.97-16.97-1.414 1.414L43.314 60zm-5.657 0l-14.142-14.142-1.414 1.414L37.657 60zm-5.657 0L28 48.97l-1.414 1.414L32 60zm-5.657 0L28 54.627l-1.414 1.414L26.344 60zm-5.657 0l-2.828-2.828-1.414 1.414L20.687 60z' fill='%234A9FD8' fill-opacity='0.04' fill-rule='evenodd'/%3E%3C/svg%3E");
-        opacity: 0.7;
+      .drop-area:hover, .drop-area.highlight {
+        background: #e8f2fe;
+        border-color: #0062ff;
+        transform: translateY(-2px);
       }
-
-      .drop-area:hover,
-      .drop-area.highlight {
-        background: rgba(74, 159, 216, 0.05);
-        border-color: var(--primary);
-        transform: translateY(-3px);
-        box-shadow: 0 10px 30px rgba(0, 98, 155, 0.1);
-      }
-
       .drop-area i {
         font-size: 3.5rem;
-        color: var(--primary);
-        margin-bottom: 1.5rem;
-        position: relative;
-        z-index: 1;
+        color: #0062ff;
+        margin-bottom: 1rem;
       }
-
       .drop-area h3 {
-        font-size: 1.4rem;
-        margin-bottom: 1rem;
-        color: var(--primary-dark);
-        position: relative;
-        z-index: 1;
-      }
-
-      .drop-area p {
-        font-size: 1.1rem;
-        color: var(--text-light);
-        margin-bottom: 1.2rem;
-        position: relative;
-        z-index: 1;
-      }
-
-      .file-input {
-        display: none;
-      }
-
-      /* Redesigned Browse Button - More Modern and Attractive */
-      .browse-button-alt {
-        padding: 0.5rem 1.1rem;
-        font-size: 0.85rem;
-        border-radius: 8px;
-        background: white;
-        color: var(--primary-dark);
-        border: 2px solid var(--primary);
-        box-shadow: 0 4px 10px rgba(0, 98, 155, 0.1);
-        transition: all 0.3s ease;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center; /* Added to center content */
-        gap: 0.5rem;
-        font-weight: 600;
-        position: relative;
-        z-index: 1;
-        margin-top: 1rem;
-        letter-spacing: 0.3px;
-      }
-
-      .browse-button-alt::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: var(--primary);
-        opacity: 0;
-        transition: opacity 0.3s ease;
-        z-index: -1;
-        border-radius: 6px;
-      }
-
-      .browse-button-alt:hover {
-        color: white;
-        transform: translateY(-3px);
-        box-shadow: 0 7px 15px rgba(0, 98, 155, 0.2);
-      }
-
-      .browse-button-alt:hover::before {
-        opacity: 1;
-      }
-
-      .browse-button-alt i {
-        font-size: 1rem; /* Standardize icon size */
-        display: flex; /* Ensure icon container is properly sized */
-        align-items: center;
-        justify-content: center;
-        transition: transform 0.3s ease;
-        height: 1rem; /* Fixed height to ensure vertical alignment */
-        width: 1rem; /* Width to match height for symmetry */
-        margin: 0; /* Remove any default margins */
-      }
-
-      .browse-button-alt:hover i {
-        transform: translateX(3px);
-      }
-
-      .button-wrapper {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        align-items: center;
-      }
-
-      /* Improved file preview styling - fix positioning of button container */
-      .file-preview {
-        background: linear-gradient(135deg, #f8f9fa 0%, #f1f8fe 100%);
-        border-radius: var(--radius-xl);
-        padding: 2rem;
-        margin: 2rem 0;
-        text-align: center;
-        border: 1px solid rgba(0, 98, 155, 0.1);
-        box-shadow: 0 8px 30px rgba(0, 98, 155, 0.05);
-        position: relative;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-      }
-
-      /* Fixed height for preview wrapper to avoid layout shifts */
-      .file-preview-wrapper {
-        max-height: 300px;
-        height: 300px;
-        width: 100%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        overflow: hidden;
-        margin-bottom: 1rem;
-      }
-
-      /* Ensure button container stays within preview area */
-      .file-preview .button-container {
-        display: flex;
-        justify-content: center;
-        margin-top: 1rem;
-        width: 100%;
-        position: relative;
-        z-index: 5;
-      }
-
-      /* Ensure detect button is always visible */
-      .detect-button {
-        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-        color: var(--white);
-        border: none;
-        padding: 1rem 2.5rem;
-        border-radius: 50px;
-        font-size: 1.1rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.85rem;
-        box-shadow: 0 8px 25px rgba(0, 98, 155, 0.2);
-        position: relative;
-        overflow: hidden;
-        min-width: 250px;
-        max-width: 300px;
-        letter-spacing: 0.5px;
-        z-index: 1;
-        margin: 0 auto; /* Center horizontally */
-      }
-
-      /* Enhanced Loading Indicator */
-      .loading {
-        display: none;
-        text-align: center;
-        margin: 2rem auto;
-        padding: 3rem;
-        background: linear-gradient(135deg, #f8f9fa 0%, #f1f8fe 100%);
-        border-radius: var(--radius-xl);
-        box-shadow: 0 8px 30px rgba(0, 98, 155, 0.1);
-        max-width: 800px;
-        position: relative;
-        overflow: hidden;
-      }
-      
-      .loading::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M54.627 0l.83.828-1.415 1.415L51.8 0h2.827zM5.373 0l-.83.828L5.96 2.243 8.2 0H5.374zM48.97 0l3.657 3.657-1.414 1.414L46.143 0h2.828zM11.03 0L7.372 3.657 8.787 5.07 13.857 0H11.03zm32.284 0L49.8 6.485 48.384 7.9l-7.9-7.9h2.83zM16.686 0L10.2 6.485 11.616 7.9l7.9-7.9h-2.83zm20.97 0l9.315 9.314-1.414 1.414L34.828 0h2.83zM22.344 0L13.03 9.314l1.414 1.414L25.172 0h-2.83zM32 0l12.142 12.142-1.414 1.414L30 .828 17.272 13.556l-1.414-1.414L28 0h4zM.284 0l28 28-1.414 1.414L0 2.544V0h.284zM0 5.373l25.456 25.455-1.414 1.415L0 8.2V5.374zm0 5.656l22.627 22.627-1.414 1.414L0 13.86v-2.83zm0 5.656l19.8 19.8-1.415 1.413L0 19.514v-2.83zm0 5.657l16.97 16.97-1.414 1.415L0 25.172v-2.83zM0 28l14.142 14.142-1.414 1.414L0 30.828V28zm0 5.657L11.314 44.97l-1.414 1.414L0 36.485v-2.83zm0 5.657L8.485 47.8l-1.414 1.414L0 42.143v-2.83zm0 5.657l5.657 5.657-1.414 1.415L0 47.8v-2.83zm0 5.657l2.828 2.83-1.414 1.413L0 53.456v-2.83zM54.627 60L28 33.373l-1.414 1.414L54.627 60zm-5.657 0L28 38.627l-1.414 1.414L48.97 60zm-5.657 0l-16.97-16.97-1.414 1.414L43.314 60zm-5.657 0l-14.142-14.142-1.414 1.414L37.657 60zm-5.657 0L28 48.97l-1.414 1.414L32 60zm-5.657 0L28 54.627l-1.414 1.414L26.344 60zm-5.657 0l-2.828-2.828-1.414 1.414L20.687 60z' fill='%234A9FD8' fill-opacity='0.04' fill-rule='evenodd'/%3E%3C/svg%3E");
-        opacity: 0.7;
-        z-index: 0;
-      }
-      
-      .loader-container {
-        width: 100%;
-        max-width: 500px;
-        margin: 0 auto;
-        position: relative;
-        z-index: 1;
-      }
-      
-      /* Enhanced bone spinner animation with bluish gradient effect */
-      .loading-icon {
-        width: 80px;
-        height: 80px;
-        background: linear-gradient(135deg, #4a9fd8 0%, #0062a3 50%, #004c8c 100%);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 1.5rem;
-        color: white;
-        font-size: 2.5rem;
-        box-shadow: 0 8px 25px rgba(0, 98, 155, 0.3);
-        position: relative;
-        overflow: hidden;
-        animation: gradientShift 3s infinite alternate;
-      }
-
-      /* Animation for gradient shift effect */
-      @keyframes gradientShift {
-        0% {
-          background: linear-gradient(135deg, #4a9fd8 0%, #0062a3 50%, #004c8c 100%);
-        }
-        50% {
-          background: linear-gradient(135deg, #0062a3 0%, #004c8c 50%, #4a9fd8 100%);
-        }
-        100% {
-          background: linear-gradient(135deg, #004c8c 0%, #4a9fd8 50%, #0062a3 100%);
-        }
-      }
-
-      /* Enhance bone icon with pulsating effect */
-      .loading-icon i {
-        animation: pulseBone 1.5s infinite ease-in-out;
-      }
-
-      @keyframes pulseBone {
-        0% {
-          transform: scale(1);
-          text-shadow: 0 0 0 rgba(255,255,255,0.3);
-        }
-        50% {
-          transform: scale(1.2);
-          text-shadow: 0 0 20px rgba(255,255,255,0.7);
-        }
-        100% {
-          transform: scale(1);
-          text-shadow: 0 0 0 rgba(255,255,255,0.3);
-        }
-      }
-
-      .loading h3 {
-        font-size: 1.6rem;
-        margin-bottom: 1rem;
-        color: var(--primary-dark);
-      }
-
-      .loading p {
-        font-size: 1.1rem;
-        color: var(--text-light);
-        margin-bottom: 1.5rem;
-      }
-      
-      /* Enhanced progress bar with bluish gradient */
-      .progress-bar {
-        width: 100%;
-        height: 10px;
-        background-color: rgba(0, 98, 155, 0.1);
-        border-radius: 5px;
-        margin: 1.5rem 0;
-        overflow: hidden;
-        position: relative;
-        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-      }
-      
-      /* Beautiful bluish gradient for progress bar */
-      .progress-value {
-        width: 0%;
-        height: 100%;
-        background: linear-gradient(to right, #4a9fd8, #0062a3, #004c8c, #003b6f);
-        background-size: 300% 100%;
-        position: absolute;
-        top: 0;
-        left: 0;
-        border-radius: 5px;
-        transition: width 0.5s ease;
-        box-shadow: 0 1px 5px rgba(0, 98, 155, 0.3);
-        animation: progressGradient 2s ease infinite;
-      }
-
-      /* Animation for flowing gradient effect in progress bar */
-      @keyframes progressGradient {
-        0% {
-          background-position: 0% 50%;
-        }
-        50% {
-          background-position: 100% 50%;
-        }
-        100% {
-          background-position: 0% 50%;
-        }
-      }
-
-      .progress-info {
-        font-size: 0.9rem;
-        color: var(--text-light);
-        margin-top: 0.75rem;
-        text-align: center;
-      }
-
-      /* Completely redesigned results section */
-      .results-container {
-        display: none;
-        max-width: 1200px;
-        margin: 2rem auto;
-        opacity: 0;
-        transition: opacity 0.5s ease;
-      }
-
-      .results-header {
-        background: linear-gradient(135deg, #f8f9fa 0%, #f1f8fe 100%);
-        color: var(--primary-dark);
-        padding: 1.5rem 2rem;
-        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-        text-align: center;
-        box-shadow: 0 4px 15px rgba(0, 98, 155, 0.1);
-        border-bottom: 1px solid rgba(0, 98, 155, 0.08);
-      }
-
-      .results-header h2 {
-        color: var(--primary-dark);
+        font-size: 1.35rem;
+        color: #1e3a8a;
         margin-bottom: 0.5rem;
       }
-
-      .results-header p {
-        color: var(--text-light);
-        font-size: 1.05rem; /* Slightly larger text */
-        font-weight: 400; /* Medium weight for better readability */
-        text-shadow: none; /* Remove text shadow for clean look */
-        margin-top: 0.5rem;
+      .drop-area p {
+        color: #64748b;
+        margin-bottom: 1.25rem;
       }
+      .browse-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.7rem 1.6rem;
+        background: #0062ff;
+        color: #ffffff;
+        border-radius: 50px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: all 0.25s ease;
+      }
+      .browse-btn:hover {
+        background: #0048c2;
+      }
+      .file-input { display: none; }
 
-      .results-content {
-        display: flex;
+      /* File Preview */
+      .file-preview {
+        display: none;
         flex-direction: column;
-        gap: 2rem;
-        background: white;
-        border-radius: 0 0 var(--radius-xl) var(--radius-xl);
-        padding: 2.5rem;
-      }
-
-      /* Add new layout for side-by-side visualization */
-      .visualization-container {
-        display: flex;
-        gap: 2rem;
-        width: 100%;
-      }
-
-      .visualization-panel {
-        flex: 1;
-        min-width: 0; /* Prevent flex items from overflowing */
-      }
-
-      /* Ensure images fit properly in their containers */
-      .result-display {
-        background: #222;
-        border-radius: var(--radius-lg);
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-        display: flex;
-        justify-content: center;
         align-items: center;
-        min-height: 350px;
-        position: relative;
-        overflow: hidden;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 2rem;
+        margin-bottom: 2rem;
       }
-
-      .result-display img {
+      .file-preview-img-container {
+        max-height: 320px;
+        margin-bottom: 1.5rem;
+      }
+      .file-preview img {
+        max-height: 320px;
         max-width: 100%;
-        max-height: 350px;
-        object-fit: contain;
-        display: block;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
       }
-
-      /* Position detection details below visualizations */
-      .detection-details-section {
-        width: 100%;
-        margin-top: 1rem;
-        border-top: 1px solid rgba(0, 98, 155, 0.1);
-        padding-top: 2rem;
-      }
-
-      /* Responsive layout adjustments */
-      @media (max-width: 992px) {
-        .visualization-container {
-          flex-direction: column;
-        }
-        
-        .visualization-panel {
-          width: 100%;
-        }
-      }
-
-      /* Better section organizing */
-      .result-section {
-        margin-bottom: 3rem;
-        border-bottom: 1px solid rgba(0, 98, 155, 0.1);
-        padding-bottom: 2rem;
-      }
-
-      .result-section:last-child {
-        margin-bottom: 0;
-        border-bottom: none;
-        padding-bottom: 0;
-      }
-
-      .result-section-title {
-        font-size: 1.5rem;
-        color: var(--primary-dark);
-        margin-bottom: 1.5rem;
+      .detect-actions {
         display: flex;
-        align-items: center;
-        gap: 0.75rem;
-      }
-
-      .result-section-title i {
-        color: var(--primary);
-      }
-
-      /* Improved image display */
-      .result-display {
-        background: #222;
-        border-radius: var(--radius-lg);
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
         justify-content: center;
+      }
+      .btn-detect {
+        background: linear-gradient(135deg, #0062ff 0%, #0048c2 100%);
+        color: #fff;
+        border: none;
+        padding: 0.85rem 2.2rem;
+        border-radius: 50px;
+        font-size: 1.05rem;
+        font-weight: 700;
+        cursor: pointer;
+        display: inline-flex;
         align-items: center;
-        position: relative;
+        gap: 0.6rem;
+        box-shadow: 0 6px 20px rgba(0, 98, 255, 0.25);
+        transition: all 0.3s ease;
+      }
+      .btn-detect:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0, 98, 255, 0.35);
+      }
+      .btn-secondary-cancel {
+        background: #e2e8f0;
+        color: #334155;
+        border: none;
+        padding: 0.85rem 1.6rem;
+        border-radius: 50px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      /* Loading */
+      .loading-box {
+        display: none;
+        text-align: center;
+        padding: 3rem 2rem;
+        background: #f8fbff;
+        border-radius: 16px;
+        margin-bottom: 2rem;
+      }
+      .loading-spinner {
+        font-size: 3rem;
+        color: #0062ff;
+        margin-bottom: 1.5rem;
+        animation: spin 1.5s linear infinite;
+      }
+      @keyframes spin { 100% { transform: rotate(360deg); } }
+      .progress-container {
+        width: 100%;
+        max-width: 480px;
+        height: 10px;
+        background: #e2e8f0;
+        border-radius: 5px;
+        margin: 1.5rem auto;
         overflow: hidden;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+      }
+      .progress-bar {
+        width: 0%;
+        height: 100%;
+        background: linear-gradient(90deg, #0062ff, #00d1ff);
+        transition: width 0.4s ease;
       }
 
-      .result-display img {
-        max-width: 100%;
-        object-fit: contain;
-        display: block;
+      /* Results */
+      .results-area {
+        display: none;
       }
-
-      /* Detections styling */
-      .detection-list-container {
-        background: linear-gradient(to right, rgba(74, 159, 216, 0.05), rgba(74, 159, 216, 0.02));
-        border-radius: var(--radius-lg);
-        padding: 1.5rem;
-        margin-top: 2rem;
-      }
-
-      .detection-item {
-        background: white;
-        border-radius: var(--radius-md);
-        padding: 1.25rem;
-        margin-bottom: 1rem;
-        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
-        border-left: 4px solid var(--primary);
+      .triage-banner {
+        padding: 1.25rem 2rem;
+        border-radius: 14px;
+        margin-bottom: 2rem;
         display: flex;
-        align-items: flex-start;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
         gap: 1rem;
       }
+      .triage-urgent { background: #fef2f2; border: 2px solid #ef4444; color: #991b1b; }
+      .triage-moderate { background: #fffbeb; border: 2px solid #f59e0b; color: #92400e; }
+      .triage-routine { background: #f0fdf4; border: 2px solid #22c55e; color: #166534; }
 
-      .detection-item:last-child {
-        margin-bottom: 0;
+      .visual-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
       }
-
-      .detection-icon {
-        color: var(--primary);
-        font-size: 1.5rem;
-        margin-top: 0.25rem;
+      .visual-card {
+        background: #111827;
+        border-radius: 14px;
+        padding: 1rem;
+        color: #ffffff;
       }
-
-      .detection-content {
-        flex: 1;
-      }
-
-      .detection-content h4 {
+      .visual-card h4 {
+        font-size: 0.95rem;
+        color: #93c5fd;
         margin-bottom: 0.75rem;
-        color: var(--primary-dark);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .visual-card img {
+        width: 100%;
+        height: 280px;
+        object-fit: contain;
+        border-radius: 8px;
+        background: #000;
+      }
+
+      /* Clinical Cards */
+      .clinical-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+      }
+      .clinical-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+      }
+      .clinical-card h3 {
+        font-size: 1.2rem;
+        color: #1e3a8a;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+      }
+      .metric-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.6rem 0;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.95rem;
+      }
+      .metric-row:last-child { border-bottom: none; }
+      .metric-label { color: #64748b; font-weight: 500; }
+      .metric-val { color: #1e293b; font-weight: 700; }
+
+      .bullet-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      .bullet-list li {
+        position: relative;
+        padding-left: 1.5rem;
+        margin-bottom: 0.6rem;
+        color: #334155;
+        font-size: 0.95rem;
+        line-height: 1.5;
+      }
+      .bullet-list li::before {
+        content: "•";
+        position: absolute;
+        left: 0.4rem;
+        color: #0062ff;
+        font-weight: bold;
         font-size: 1.2rem;
       }
 
-      .confidence {
-        margin-bottom: 0.75rem;
+      .detection-badge-list {
         display: flex;
         flex-direction: column;
-        gap: 0.5rem;
+        gap: 0.75rem;
+        margin-top: 0.5rem;
       }
-
-      .confidence-bar {
-        height: 8px;
-        background: rgba(74, 159, 216, 0.1);
-        border-radius: 4px;
-        overflow: hidden;
-      }
-
-      .confidence-value {
-        height: 100%;
-        background: linear-gradient(to right, var(--primary-light), var(--primary));
-      }
-
-      .confidence.high .confidence-value {
-        background: linear-gradient(to right, #4CAF50, #2E7D32);
-      }
-
-      .confidence.medium .confidence-value {
-        background: linear-gradient(to right, #FFC107, #FF9800);
-      }
-
-      .confidence.low .confidence-value {
-        background: linear-gradient(to right, #FF9800, #F44336);
-      }
-
-      .location-info {
-        font-size: 0.9rem;
-        color: var(--text-light);
+      .detection-pill {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-left: 4px solid #0062ff;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
         display: flex;
+        justify-content: space-between;
         align-items: center;
-        gap: 0.5rem;
       }
 
-      /* Grad-CAM container styling */
-      .gradcam-section {
-        background: rgba(0, 98, 155, 0.03);
-        border-radius: var(--radius-lg);
-        padding: 2rem;
-        margin-top: 2rem;
-      }
-
-      .gradcam-header {
-        margin-bottom: 1.5rem;
-      }
-
-      .explanation-legend {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-        margin: 1rem 0;
-        background: white;
-        padding: 1rem;
-        border-radius: var(--radius-md);
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-      }
-
-      .legend-item {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.9rem;
-      }
-
-      .legend-color {
-        width: 20px;
-        height: 20px;
-        border-radius: 4px;
-      }
-
-      .explanation-text {
-        background: white;
-        border-radius: var(--radius-md);
-        padding: 1rem;
-        margin-top: 1rem;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-        font-size: 0.95rem;
-        color: var(--text-light);
-        line-height: 1.6;
-      }
-
-      /* Action buttons styling */
-      .results-actions {
-        display: flex;
-        justify-content: center;
-        margin-top: 2.5rem;
-        height: auto;
-      }
-
-      .reset-button {
+      .btn-reset {
+        background: #0062ff;
+        color: #fff;
+        border: none;
+        padding: 0.8rem 2rem;
+        border-radius: 50px;
+        font-weight: 600;
+        cursor: pointer;
         display: inline-flex;
         align-items: center;
-        justify-content: center;
         gap: 0.5rem;
-        padding: 0.75rem 1.75rem;
-        height: auto;
-        min-height: 2.5rem;
-        max-height: 2.8rem;
-        border-radius: 50px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        font-size: 1rem;
-        border: none;
-        width: auto;
-        max-width: 220px;
-        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-        color: white;
-        box-shadow: 0 4px 12px rgba(0, 98, 155, 0.2);
-        line-height: 1;
-      }
-      
-      /* Main content section padding to avoid navbar overlap */
-      .main-content {
-        padding-top: 100px;
       }
     </style>
   </head>
@@ -695,129 +423,139 @@
     <!-- NAVIGATION PLACEHOLDER -->
     <div id="nav-placeholder"></div>
 
-    <!-- CONTENT SECTIONS -->
-    <main class="detection-page">
-      <div class="main-content">
-        <div class="container">
-          <!-- DETECTION SECTION -->
-          <div class="section">
-            <div class="detection-header">
-              <h1>MediScan Detection</h1>
-              <p>Upload your X-ray image for instant fracture detection using our advanced AI algorithm</p>
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+      <div class="container">
+        <div class="detection-header">
+          <h1>MediScan AI Diagnostic Studio</h1>
+          <p>Next-generation radiographic intelligence for instant bone fracture localization and advanced bone disease pathology detection.</p>
+        </div>
+
+        <div class="detector-container">
+          <!-- MODE SWITCHER -->
+          <div class="mode-switcher-container">
+            <button class="mode-tab active" data-mode="fracture" id="tab-fracture">
+              <i class="fas fa-bone"></i> Bone Fracture Detection
+            </button>
+            <button class="mode-tab" data-mode="disease" id="tab-disease">
+              <i class="fas fa-microscope"></i> Bone Disease & Pathology
+            </button>
+            <button class="mode-tab" data-mode="comprehensive" id="tab-comprehensive">
+              <i class="fas fa-bolt"></i> Comprehensive Full Scan
+            </button>
+          </div>
+
+          <!-- QUICK SAMPLE GALLERY -->
+          <div class="samples-section">
+            <div class="samples-title">
+              <h3><i class="fas fa-images text-primary"></i> 1-Click Sample Test X-Rays</h3>
+              <span>Click any image to test immediately</span>
+            </div>
+            <div class="samples-grid" id="samples-grid">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- UPLOAD DROP AREA -->
+          <div class="drop-area" id="drop-area">
+            <i class="fas fa-cloud-arrow-up"></i>
+            <h3 id="upload-heading">Drag & Drop Your X-Ray Image</h3>
+            <p>Supported standard formats: JPG, PNG, DICOM-exported JPG</p>
+            <span class="browse-btn" id="browse-btn">
+              <i class="fas fa-folder-open"></i> Browse Radiographs
+            </span>
+            <input type="file" id="file-input" class="file-input" accept="image/jpeg, image/png, image/jpg" />
+          </div>
+
+          <!-- FILE PREVIEW -->
+          <div class="file-preview" id="file-preview">
+            <div class="file-preview-img-container">
+              <img id="preview-image" src="#" alt="X-Ray Preview" />
+            </div>
+            <div class="detect-actions">
+              <button type="button" id="detect-button" class="btn-detect">
+                <i class="fas fa-magnifying-glass"></i> <span id="detect-btn-text">Analyze X-Ray</span>
+              </button>
+              <button type="button" id="cancel-preview-btn" class="btn-secondary-cancel">
+                Cancel
+              </button>
+            </div>
+          </div>
+
+          <!-- LOADING BOX -->
+          <div class="loading-box" id="loading">
+            <i class="fas fa-circle-notch loading-spinner"></i>
+            <h3 id="loading-title">AI Examining Radiograph...</h3>
+            <p id="loading-subtitle">Applying deep neural feature extractors and morphological biomarker filters...</p>
+            <div class="progress-container">
+              <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            <div id="progress-info" style="color: #64748b; font-size: 0.9rem;">Processing (0%)...</div>
+          </div>
+
+          <!-- RESULTS AREA -->
+          <div class="results-area" id="results-area">
+            <!-- Triage Banner -->
+            <div class="triage-banner" id="triage-banner">
+              <div>
+                <h3 id="triage-title" style="margin-bottom: 0.25rem;"><i class="fas fa-triangle-exclamation"></i> Triage Assessment</h3>
+                <p id="triage-subtitle" style="margin: 0; font-size: 0.95rem;">Radiographic evaluation complete.</p>
+              </div>
+              <div id="triage-badge-container"></div>
             </div>
 
-            <!-- UPLOAD AREA -->
-            <div class="detector-container">
-              <div class="drop-area" id="drop-area">
-                <i class="fas fa-cloud-upload-alt"></i>
-                <h3>Drag & Drop Your X-Ray Image</h3>
-                <p>Supported formats: JPG, PNG</p>
-                <span class="browse-button-alt" id="browse-btn">
-                  <i class="fas fa-folder-open"></i> Browse Files
-                </span>
-                <input type="file" id="file-input" class="file-input" accept="image/jpeg, image/png" />
+            <!-- Visual Heatmaps Grid -->
+            <div class="visual-grid" id="visual-grid">
+              <div class="visual-card">
+                <h4><i class="fas fa-image"></i> Original Radiograph</h4>
+                <img id="res-orig-img" src="#" alt="Original X-Ray" />
+              </div>
+              <div class="visual-card" id="card-fracture-result">
+                <h4><i class="fas fa-crosshairs"></i> Fracture Detection (YOLOv8)</h4>
+                <img id="res-plot-img" src="#" alt="Fracture Detection" />
+              </div>
+              <div class="visual-card" id="card-gradcam">
+                <h4><i class="fas fa-fire"></i> Grad-CAM Attention Heatmap</h4>
+                <img id="res-gradcam-img" src="#" alt="Grad-CAM" />
+              </div>
+              <div class="visual-card" id="card-disease-heatmap" style="display: none;">
+                <h4><i class="fas fa-disease"></i> Pathology Localization Heatmap</h4>
+                <img id="res-disease-img" src="#" alt="Disease Heatmap" />
+              </div>
+            </div>
+
+            <!-- Clinical Breakdown Cards -->
+            <div class="clinical-grid">
+              <!-- Fracture Details Card -->
+              <div class="clinical-card" id="clinical-fracture-card">
+                <h3><i class="fas fa-bone text-primary"></i> Fracture Analysis</h3>
+                <div id="fracture-summary-content">
+                  <!-- Injected via JS -->
+                </div>
+                <div class="detection-badge-list" id="detection-list-items"></div>
               </div>
 
-              <!-- PREVIEW AREA (Initially Hidden) -->
-              <div class="file-preview" id="file-preview" style="display: none;">
-                <div class="file-preview-wrapper">
-                  <img id="preview-image" src="#" alt="Preview" />
-                </div>
-                <div class="button-container">
-                  <button type="button" id="detect-button" class="detect-button">
-                    <i class="fas fa-search"></i> Detect Fractures
-                  </button>
+              <!-- Bone Disease Pathology Card -->
+              <div class="clinical-card" id="clinical-disease-card" style="display: none;">
+                <h3><i class="fas fa-microscope text-primary"></i> Bone Pathology & Biomarkers</h3>
+                <div id="disease-summary-content">
+                  <!-- Injected via JS -->
                 </div>
               </div>
 
-              <!-- LOADING INDICATOR (Initially Hidden) -->
-              <div class="loading" id="loading">
-                <div class="loader-container">
-                  <div class="loading-icon">
-                    <i class="fas fa-bone fa-pulse"></i>
-                  </div>
-                  <h3>Analyzing Your X-Ray</h3>
-                  <p>Our AI is examining the image for possible fractures. This usually takes 10-15 seconds.</p>
-                  <div class="progress-bar">
-                    <div class="progress-value" id="progress-value"></div>
-                  </div>
-                  <div class="progress-info" id="progress-info">Processing...</div>
-                </div>
+              <!-- Recommendations Card -->
+              <div class="clinical-card" id="clinical-recs-card">
+                <h3><i class="fas fa-stethoscope text-primary"></i> Clinical Recommendations</h3>
+                <ul class="bullet-list" id="recommendations-list">
+                  <!-- Injected via JS -->
+                </ul>
               </div>
+            </div>
 
-              <!-- RESULTS AREA (Initially Hidden) -->
-              <div class="results-container" id="results-container">
-                <div class="results-header">
-                  <h2>Detection Results</h2>
-                  <p>Our AI has analyzed your X-ray image</p>
-                </div>
-                <div class="results-content">
-                  <div class="visualization-container">
-                    <div class="visualization-panel">
-                      <div class="result-section-title">
-                        <i class="fas fa-image"></i> Original Image
-                      </div>
-                      <div class="result-display">
-                        <img id="original-image" src="#" alt="Original X-Ray" />
-                      </div>
-                    </div>
-                    <div class="visualization-panel">
-                      <div class="result-section-title">
-                        <i class="fas fa-search"></i> Detection Result
-                      </div>
-                      <div class="result-display">
-                        <img id="result-image" src="#" alt="Detection Result" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="detection-details-section">
-                    <div class="result-section">
-                      <div class="result-section-title">
-                        <i class="fas fa-clipboard-list"></i> Fracture Analysis
-                      </div>
-                      <div class="detection-list-container" id="detection-list">
-                        <!-- Generated dynamically by JavaScript -->
-                      </div>
-                    </div>
-
-                    <div class="result-section" id="gradcam-container">
-                      <div class="result-section-title">
-                        <i class="fas fa-microscope"></i> Grad-CAM Visualization
-                      </div>
-                      <div class="gradcam-section">
-                        <div class="gradcam-header">
-                          <h4>Grad-CAM Visualization</h4>
-                          <p>This heat map highlights areas that influenced the AI's fracture detection decision</p>
-                        </div>
-                        <div class="result-display">
-                          <img id="gradcam-image" src="#" alt="Grad-CAM Visualization" />
-                        </div>
-                        <div class="explanation-legend">
-                          <div class="legend-item">
-                            <div class="legend-color" style="background: #ff0000;"></div>
-                            <span>High Attention</span>
-                          </div>
-                          <div class="legend-item">
-                            <div class="legend-color" style="background: #ffff00;"></div>
-                            <span>Medium Attention</span>
-                          </div>
-                          <div class="legend-item">
-                            <div class="legend-color" style="background: #00ff00;"></div>
-                            <span>Low Attention</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="results-actions">
-                    <button id="reset-button" class="reset-button">
-                      <i class="fas fa-redo-alt"></i> Analyze Another X-Ray
-                    </button>
-                  </div>
-                </div>
-              </div>
+            <div style="text-align: center; margin-top: 2rem;">
+              <button id="reset-btn" class="btn-reset">
+                <i class="fas fa-redo"></i> Analyze Another Radiograph
+              </button>
             </div>
           </div>
         </div>
@@ -827,7 +565,6 @@
     <!-- FOOTER -->
     <div id="footer-placeholder"></div>
 
-    <!-- Scripts -->
     <script src="nav-handler.js"></script>
     <script src="footer-handler.js"></script>
     <script src="detect-script.js"></script>

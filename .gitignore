@@ -1,0 +1,66 @@
+# ---------------------------------------------------------------
+# MediScan AI - .gitignore
+# ---------------------------------------------------------------
+
+# Runtime data written by the API (uploaded X-rays and generated outputs).
+# The server recreates these folders on startup.
+backend/uploads/
+backend/results/
+
+# Python bytecode / caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Packaging / build artefacts
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Testing / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.mypy_cache/
+.ruff_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# YOLO / Ultralytics training outputs and downloaded base weights
+# (the deployed model lives in backend/models/model.pt and IS tracked)
+runs/
+yolov8*.pt
+data.yaml
+
+# Datasets downloaded for training
+datasets/
+Bone-Fracture-Detection*/
+
+# Environment / secrets
+.env
+.env.*
+
+# Logs
+*.log
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
